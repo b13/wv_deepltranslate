@@ -8,40 +8,20 @@ use TYPO3\CMS\Core\DataHandling\DataHandler;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Object\ObjectManager;
 use WebVision\WvDeepltranslate\Domain\Repository\PageRepository;
-use WebVision\WvDeepltranslate\Domain\Repository\SettingsRepository;
 use WebVision\WvDeepltranslate\Exception\LanguageIsoCodeNotFoundException;
 use WebVision\WvDeepltranslate\Exception\LanguageRecordNotFoundException;
 use WebVision\WvDeepltranslate\Service\DeeplService;
-use WebVision\WvDeepltranslate\Service\GoogleTranslateService;
 use WebVision\WvDeepltranslate\Service\LanguageService;
-use WebVision\WvDeepltranslate\Utility\HtmlUtility;
 
 class TranslateHook
 {
-    protected DeeplService $deeplService;
-
-    protected GoogleTranslateService $googleService;
-
-    protected SettingsRepository $deeplSettingsRepository;
-
-    protected PageRepository $pageRepository;
-
-    private LanguageService $languageService;
 
     public function __construct(
-        ?SettingsRepository $settingsRepository = null,
-        ?PageRepository $pageRepository = null,
-        ?DeeplService $deeplService = null,
-        ?GoogleTranslateService $googleService = null
+        protected PageRepository $pageRepository,
+        protected DeeplService $deeplService,
+        protected LanguageService $languageService
     ) {
-        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
-        $this->deeplSettingsRepository = $settingsRepository ?? $objectManager->get(SettingsRepository::class);
-        $this->deeplService = $deeplService ?? $objectManager->get(DeeplService::class);
-        $this->googleService = $googleService ?? $objectManager->get(GoogleTranslateService::class);
-        $this->pageRepository = $pageRepository ?? GeneralUtility::makeInstance(PageRepository::class);
-        $this->languageService = GeneralUtility::makeInstance(LanguageService::class);
     }
 
     /**
@@ -134,37 +114,20 @@ class TranslateHook
         array $sourceLanguageRecord
     ): string {
         // mode deepl
-        if ($customMode == 'deepl') {
-            $response = $this->deeplService->translateRequest(
-                $content,
-                $targetLanguageRecord['language_isocode'],
-                $sourceLanguageRecord['language_isocode']
-            );
+        $response = $this->deeplService->translateRequest(
+            $content,
+            $targetLanguageRecord['language_isocode'],
+            $sourceLanguageRecord['language_isocode']
+        );
 
-            if (!empty($response) && isset($response['translations'])) {
-                foreach ($response['translations'] as $translation) {
-                    if ($translation['text'] != '') {
-                        $content = htmlspecialchars_decode($translation['text'], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5);
-                        break;
-                    }
-                }
-            }
-        } //mode google
-        elseif ($customMode == 'google') {
-            $response = $this->googleService->translate(
-                $sourceLanguageRecord['language_isocode'],
-                $targetLanguageRecord['language_isocode'],
-                $content
-            );
-
-            if (!empty($response)) {
-                if (HtmlUtility::isHtml($response)) {
-                    $content = preg_replace('/\/\s/', '/', $response);
-                    $content = preg_replace('/\>\s+/', '>', $content);
+        if (!empty($response) && isset($response['translations'])) {
+            foreach ($response['translations'] as $translation) {
+                if ($translation['text'] != '') {
+                    $content = htmlspecialchars_decode($translation['text'], ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5);
+                    break;
                 }
             }
         }
-
         return $content;
     }
 }

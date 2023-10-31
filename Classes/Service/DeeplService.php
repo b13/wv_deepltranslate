@@ -7,15 +7,10 @@ namespace WebVision\WvDeepltranslate\Service;
 use GuzzleHttp\Exception\ClientException;
 use TYPO3\CMS\Core\Cache\CacheManager;
 use TYPO3\CMS\Core\Cache\Frontend\FrontendInterface;
-use TYPO3\CMS\Core\Http\Request;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Object\ObjectManager;
 use WebVision\WvDeepltranslate\Client;
-use WebVision\WvDeepltranslate\Domain\Repository\GlossaryRepository;
-use WebVision\WvDeepltranslate\Domain\Repository\SettingsRepository;
-use WebVision\WvDeepltranslate\Utility\DeeplBackendUtility;
 
 class DeeplService
 {
@@ -36,10 +31,6 @@ class DeeplService
      */
     public array $formalitySupportedLanguages = [];
 
-    protected SettingsRepository $deeplSettingsRepository;
-
-    protected GlossaryRepository $glossaryRepository;
-
     private FrontendInterface $cache;
 
     private Client $client;
@@ -50,13 +41,9 @@ class DeeplService
     ) {
         $this->cache = $cache ?? GeneralUtility::makeInstance(CacheManager::class)->getCache('wvdeepltranslate');
         $this->client = $client ?? GeneralUtility::makeInstance(Client::class);
-        $this->glossaryRepository = GeneralUtility::makeInstance(GlossaryRepository::class);
-
-        $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
-        $this->deeplSettingsRepository = $objectManager->get(SettingsRepository::class);
 
         $this->loadSupportedLanguages();
-        $this->apiSupportedLanguages['target'] = $this->deeplSettingsRepository->getSupportedLanguages($this->apiSupportedLanguages['target']);
+
     }
 
     /**
@@ -68,21 +55,10 @@ class DeeplService
         // If the source language is set to Autodetect, no glossary can be detected.
         if ($sourceLanguage === 'auto') {
             $sourceLanguage = '';
-            $glossary['glossary_id'] = '';
-        } else {
-            // TODO make glossary findable by current site
-            $glossary = $this->glossaryRepository->getGlossaryBySourceAndTarget(
-                $sourceLanguage,
-                $targetLanguage,
-                DeeplBackendUtility::detectCurrentPage()
-            );
         }
 
         try {
-            if(!isset($glossary['glossary_id'])) {
-                $glossary['glossary_id'] = '';
-            }
-            $response = $this->client->translate($content, $sourceLanguage, $targetLanguage, $glossary['glossary_id']);
+            $response = $this->client->translate($content, $sourceLanguage, $targetLanguage, '');
         } catch (ClientException $e) {
             $flashMessage = GeneralUtility::makeInstance(
                 FlashMessage::class,

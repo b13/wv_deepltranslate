@@ -12,6 +12,9 @@
 			<trans-unit id="localize.educate.deepltranslate" xml:space="preserve">
 				<source>Translating content via DeepL translate will create a translation from source language to the language you translate to. The translated content will be from DeepL translation service which is 99% accurate. DeepL service supports translation to and from English, French, German, Spanish, Italian, Dutch, and Polish languages. Other languages will be ignored and will default to the normal translate operation of TYPO3.</source>
 			</trans-unit>
+			<trans-unit id="localize.wizard.button.deepltranslate" xml:space="preserve">
+				<source>Translate (deepl)</source>
+			</trans-unit>
 			<trans-unit id="localize.educate.deepltranslateAuto" xml:space="preserve">
 				<source><![CDATA[Translating content via DeepL translate will create a translation from <b>auto detected</b> source language to the language you translate to. The translated content will be from DeepL translation service which is 99% accurate. DeepL service supports translation to and from English, French, German, Spanish, Italian, Dutch, and Polish languages. Other languages will be ignored and will default to the normal translate operation of TYPO3.]]></source>
 			</trans-unit>

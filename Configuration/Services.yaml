@@ -6,29 +6,18 @@ services:
 
   WebVision\WvDeepltranslate\:
     resource: '../Classes/*'
-    exclude: '../Classes/{Domain/Model,Override/DatabaseRecordList.php,Override/v10/DatabaseRecordList.php}'
 
-  WebVision\WvDeepltranslate\Command\GlossaryCleanupCommand:
-    tags:
-      - name: 'console.command'
-        command: 'deepl:glossary:cleanup'
-        schedulable: true
-
-  WebVision\WvDeepltranslate\Command\GlossaryListCommand:
-    tags:
-      - name: 'console.command'
-        command: 'deepl:glossary:list'
-        schedulable: false
-
-  WebVision\WvDeepltranslate\Command\GlossarySyncCommand:
-    tags:
-      - name: 'console.command'
-        command: 'deepl:glossary:sync'
-        schedulable: true
+  WebVision\WvDeepltranslate\Hooks\TranslateHook:
+    public: true
 
   WebVision\WvDeepltranslate\Service\DeeplService:
     arguments:
       $cache: '@cache.wvdeepltranslate'
+
+  WebVision\WvDeepltranslate\Listener\ModifyPageLayoutContent:
+    tags:
+      - name: event.listener
+        identifier: 'wvdeepltranslate-ModifyPageLayoutContent'
 
   cache.wvdeepltranslate:
     class: TYPO3\CMS\Core\Cache\Frontend\FrontendInterface

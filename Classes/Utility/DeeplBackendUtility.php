@@ -5,22 +5,16 @@ declare(strict_types=1);
 namespace WebVision\WvDeepltranslate\Utility;
 
 use TYPO3\CMS\Backend\Routing\UriBuilder;
-use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Database\Query\Restriction\WorkspaceRestriction;
-use TYPO3\CMS\Core\Imaging\Icon;
-use TYPO3\CMS\Core\Imaging\IconFactory;
-use TYPO3\CMS\Core\Imaging\IconProvider\BitmapIconProvider;
-use TYPO3\CMS\Core\Imaging\IconRegistry;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Utility\LocalizationUtility;
 use WebVision\WvDeepltranslate\Exception\LanguageIsoCodeNotFoundException;
 use WebVision\WvDeepltranslate\Exception\LanguageRecordNotFoundException;
-use WebVision\WvDeepltranslate\Service\DeeplGlossaryService;
 use WebVision\WvDeepltranslate\Service\LanguageService;
 
 class DeeplBackendUtility
@@ -127,98 +121,10 @@ class DeeplBackendUtility
         self::$configurationLoaded = true;
     }
 
-    public static function buildTranslateButton(
-        $table,
-        $id,
-        $lUid_OnPage,
-        $returnUrl,
-        $languageTitle = '',
-        $flagIcon = ''
-    ): string {
-        $redirectUrl = self::buildBackendRoute(
-            'record_edit',
-            [
-                'justLocalized' => $table . ':' . $id . ':' . $lUid_OnPage,
-                'returnUrl' => $returnUrl,
-            ]
-        );
-        $params = [];
-        $params['redirect'] = $redirectUrl;
-        $params['cmd'][$table][$id]['localize'] = $lUid_OnPage;
-        $params['cmd']['localization']['custom']['mode'] = 'deepl';
-        $href = self::buildBackendRoute('tce_db', $params);
-        $title =
-            (string)LocalizationUtility::translate(
-                'backend.button.translate',
-                'wv_deepltranslate',
-                [
-                    htmlspecialchars($languageTitle),
-                ]
-            );
-
-        if ($flagIcon) {
-            $icon = self::getIcon($flagIcon);
-            $lC = $icon->render();
-        } else {
-            $lC = GeneralUtility::makeInstance(
-                IconFactory::class
-            )
-                ->getIcon(
-                    'actions-localize-deepl',
-                    Icon::SIZE_SMALL
-                )->render();
-        }
-
-        return '<a href="' . htmlspecialchars($href) . '"'
-            . '" class="btn btn-default t3js-action-localize"'
-            . ' title="' . $title . '">'
-            . $lC . '</a> ';
-    }
-
     public static function buildBackendRoute(string $route, array $parameters): string
     {
         $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
         return (string)$uriBuilder->buildUriFromRoute($route, $parameters);
-    }
-
-    private static function getIcon(string $iconFlag): Icon
-    {
-        $deeplTranslateIcon = sprintf('deepl-translate-%s', $iconFlag);
-        $newIcon = GeneralUtility::makeInstance(IconFactory::class)
-            ->getIcon(
-                $deeplTranslateIcon,
-                Icon::SIZE_SMALL
-            );
-
-        if ($newIcon->getIdentifier() !== 'default-not-found') {
-            return $newIcon;
-        }
-        $flagIcon = GeneralUtility::makeInstance(IconFactory::class)
-            ->getIcon(
-                $iconFlag,
-                Icon::SIZE_SMALL
-            );
-        $deeplIcon = GeneralUtility::makeInstance(
-            IconFactory::class
-        )->getIcon(
-            'deepl-grey-logo',
-            Icon::SIZE_OVERLAY
-        );
-        GeneralUtility::makeInstance(IconRegistry::class)
-            ->registerIcon(
-                $deeplTranslateIcon,
-                BitmapIconProvider::class,
-            );
-
-        $newIcon = GeneralUtility::makeInstance(IconFactory::class)
-            ->getIcon(
-                $deeplTranslateIcon,
-                Icon::SIZE_SMALL
-            );
-        $newIcon->setIdentifier($deeplTranslateIcon);
-        $newIcon->setMarkup($flagIcon->getMarkup());
-        $newIcon->setOverlayIcon($deeplIcon);
-        return $newIcon;
     }
 
     public static function buildTranslateDropdown(
@@ -317,73 +223,9 @@ class DeeplBackendUtility
         return true;
     }
 
-    public static function checkGlossaryCanCreated(string $sourceLanguage, string $targetLanguage): bool
-    {
-        $possibleGlossaryMatches = GeneralUtility::makeInstance(DeeplGlossaryService::class)
-            ->getPossibleGlossaryLanguageConfig();
-        if (!isset($possibleGlossaryMatches[$sourceLanguage])) {
-            return false;
-        }
-        if (in_array($targetLanguage, $possibleGlossaryMatches[$sourceLanguage])) {
-            return true;
-        }
-        return false;
-    }
 
     private static function getBackendUserAuthentication(): BackendUserAuthentication
     {
         return $GLOBALS['BE_USER'];
-    }
-
-    /**
-     * @return array{uid: int, title: string}|array<empty>
-     */
-    public static function detectCurrentPage(): array
-    {
-        self::$currentPage = [];
-        $request = $GLOBALS['TYPO3_REQUEST'];
-        $queryParams = $request ? $request->getQueryParams() : [];
-        if (isset($queryParams['id']) || isset($queryParams['pageId'])) {
-            $currentId = (int)($queryParams['id'] ?? $queryParams['pageId']);
-            return self::getPageRecord($currentId);
-        }
-        if (isset($queryParams['cmd'])) {
-            foreach ($queryParams['cmd'] as $possibleTable => $values) {
-                if ($possibleTable === 'localization') {
-                    continue;
-                }
-                [$id] = array_keys($values);
-                if ($possibleTable === 'pages') {
-                    self::$currentPage = self::getPageRecord($id);
-                }
-                $pageId = self::getPageIdFromRecord($possibleTable, $id);
-                self::$currentPage = self::getPageRecord($pageId);
-            }
-        }
-
-        return self::$currentPage;
-    }
-
-    /**
-     * @return array{uid: int, title: string}|array<empty>
-     */
-    private static function getPageRecord(int $id): array
-    {
-        $page = BackendUtility::getRecord(
-            'pages',
-            $id,
-            'uid, title'
-        );
-        return $page ?? [];
-    }
-
-    private static function getPageIdFromRecord(string $table, int $id): int
-    {
-        $record = BackendUtility::getRecord(
-            $table,
-            $id,
-            'pid'
-        );
-        return $record['pid'];
     }
 }

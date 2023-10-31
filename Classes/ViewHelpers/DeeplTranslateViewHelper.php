@@ -10,7 +10,6 @@ use WebVision\WvDeepltranslate\Utility\DeeplBackendUtility;
 
 class DeeplTranslateViewHelper extends AbstractViewHelper
 {
-    private const GLOSSARY_MODE = 'glossary';
     public function initializeArguments()
     {
         $this->registerArgument(
@@ -26,7 +25,6 @@ class DeeplTranslateViewHelper extends AbstractViewHelper
         $options = [];
         /** @var PageLayoutContext $context */
         $context = $this->arguments['context'];
-        $mode = $context->getPageRecord()['module'];
 
         $languageMatch = [];
 
@@ -35,22 +33,12 @@ class DeeplTranslateViewHelper extends AbstractViewHelper
                 $siteLanguage->getLanguageId() != -1
                 && $siteLanguage->getLanguageId() != 0
             ) {
-                if ($mode === self::GLOSSARY_MODE) {
-                    if (!DeeplBackendUtility::checkGlossaryCanCreated(
-                        $context->getSiteLanguage()->getTwoLetterIsoCode(),
-                        $siteLanguage->getTwoLetterIsoCode()
-                    )
-                    ) {
-                        continue;
-                    }
-                } else {
-                    if (!DeeplBackendUtility::checkCanBeTranslated(
-                        $context->getPageId(),
-                        $siteLanguage->getLanguageId()
-                    )
-                    ) {
-                        continue;
-                    }
+                if (!DeeplBackendUtility::checkCanBeTranslated(
+                    $context->getPageId(),
+                    $siteLanguage->getLanguageId()
+                )
+                ) {
+                    continue;
                 }
                 $languageMatch[$siteLanguage->getTitle()] = $siteLanguage->getLanguageId();
             }
@@ -74,9 +62,7 @@ class DeeplTranslateViewHelper extends AbstractViewHelper
             $params = [];
             $params['redirect'] = $redirectUrl;
             $params['cmd']['pages'][$context->getPageId()]['localize'] = $languageMatch[$possibleLanguage];
-            if ($mode !== self::GLOSSARY_MODE) {
-                $params['cmd']['localization']['custom']['mode'] = 'deepl';
-            }
+            $params['cmd']['localization']['custom']['mode'] = 'deepl';
             $targetUrl = DeeplBackendUtility::buildBackendRoute('tce_db', $params);
 
             $options[$targetUrl] = $possibleLanguage;
