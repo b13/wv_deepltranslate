@@ -48,21 +48,6 @@ if (!defined('TYPO3')) {
                 'default' => 0,
             ],
         ],
-        'glossary_information' => [
-            'label' => $ll('pages.glossary_information'),
-            'displayCond' => [
-                'AND' => [
-                    'FIELD:doktype:=:254',
-                    'FIELD:module:=:glossary',
-                ],
-            ],
-            'config' => [
-                'type' => 'inline',
-                'readOnly' => true,
-                'foreign_table' => 'tx_wvdeepltranslate_glossary',
-                'foreign_field' => 'pid',
-            ],
-        ],
     ];
 
     \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addTCAcolumns('pages', $columns);
@@ -70,7 +55,7 @@ if (!defined('TYPO3')) {
     \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addFieldsToPalette(
         'pages',
         'deepl_translate',
-        'tx_wvdeepltranslate_content_not_checked, tx_wvdeepltranslate_translated_time,glossary_information'
+        'tx_wvdeepltranslate_content_not_checked, tx_wvdeepltranslate_translated_time'
     );
 
     \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addToAllTCAtypes(
